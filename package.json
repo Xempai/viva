@@ -1,0 +1,21 @@
+{
+  "name": "youtube-video-streamer",
+  "version": "1.0.0",
+  "description": "Application web pour télécharger et streamer des vidéos YouTube",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": ["youtube", "streaming", "video", "download"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "@distube/ytdl-core": "^4.14.4",
+    "uuid": "^9.0.1"
+  }
+}
