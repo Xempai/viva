@@ -1,11 +1,14 @@
 const express = require('express');
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Agent pour éviter les blocages YouTube
+const agent = ytdl.createAgent();
 
 // Dossier pour les téléchargements
 const DOWNLOAD_FOLDER = path.join(__dirname, 'downloads');
@@ -41,7 +44,7 @@ app.post('/api/download', async (req, res) => {
     
     try {
         // Récupère les infos de la vidéo
-        const info = await ytdl.getInfo(url);
+        const info = await ytdl.getInfo(url, { agent });
         const videoId = info.videoDetails.videoId;
         const title = info.videoDetails.title;
         const duration = parseInt(info.videoDetails.lengthSeconds);
@@ -80,7 +83,8 @@ app.post('/api/download', async (req, res) => {
         // Commence le téléchargement
         const video = ytdl(url, { 
             quality: 'highest',
-            filter: 'audioandvideo'
+            filter: 'audioandvideo',
+            agent: agent
         });
 
         const writeStream = fs.createWriteStream(filepath);
