@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Streamer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .video-container {
+            display: none;
+            margin-top: 30px;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .video-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .video-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .video-list {
+            margin-top: 30px;
+        }
+
+        .video-list h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .video-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+
+        .video-item:hover {
+            background: #e9ecef;
+        }
+
+        .video-item-info {
+            flex: 1;
+        }
+
+        .video-item-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .video-item-meta {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .video-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .video-item button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+        }
+
+        .play-btn {
+            background: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 YouTube Video Streamer</h1>
+        
+        <div class="card">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="youtubeUrl" 
+                    placeholder="Collez le lien YouTube ici (ex: https://www.youtube.com/watch?v=...)"
+                >
+                <button id="downloadBtn" onclick="startDownload()">
+                    Télécharger et Streamer
+                </button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="video-container" id="videoContainer">
+                <video id="videoPlayer" controls></video>
+                <div class="video-info" id="videoInfo"></div>
+            </div>
+        </div>
+
+        <div class="card video-list">
+            <h2>📚 Vidéos téléchargées</h2>
+            <div id="videosList"></div>
+        </div>
+    </div>
+
+    <script>
+        let downloadId = null;
+        let statusCheckInterval = null;
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+            
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        async function startDownload() {
+            const url = document.getElementById('youtubeUrl').value.trim();
+            
+            if (!url) {
+                showStatus('Veuillez entrer une URL YouTube valide', 'error');
+                return;
+            }
+
+            // Réinitialise l'interface
+            document.getElementById('videoContainer').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressFill').textContent = '0%';
+            document.getElementById('downloadBtn').disabled = true;
+
+            try {
+                showStatus('Démarrage du téléchargement...', 'info');
+
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erreur lors du téléchargement');
+                }
+
+                downloadId = data.download_id;
+                
+                if (data.already_exists) {
+                    showStatus('Vidéo déjà téléchargée ! Chargement...', 'success');
+                }
+
+                checkDownloadStatus();
+
+            } catch (error) {
+                showStatus(`Erreur: ${error.message}`, 'error');
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+        }
+
+        async function checkDownloadStatus() {
+            if (!downloadId) return;
+
+            statusCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${downloadId}`);
+                    const status = await response.json();
+
+                    if (status.status === 'downloading') {
+                        const progress = status.progress || 0;
+                        document.getElementById('progressFill').style.width = `${progress}%`;
+                        document.getElementById('progressFill').textContent = `${progress.toFixed(1)}%`;
+                        showStatus(`Téléchargement en cours: ${progress.toFixed(1)}%`, 'info');
+                    } 
+                    else if (status.status === 'completed') {
+                        clearInterval(statusCheckInterval);
+                        document.getElementById('progressContainer').style.display = 'none';
+                        showStatus('Téléchargement terminé ! Lecture en cours...', 'success');
+                        playVideo(status);
+                        document.getElementById('downloadBtn').disabled = false;
+                        loadVideosList();
+                    }
+                    else if (status.status === 'error') {
+                        clearInterval(statusCheckInterval);
+                        showStatus(`Erreur: ${status.error}`, 'error');
+                        document.getElementById('progressContainer').style.display = 'none';
+                        document.getElementById('downloadBtn').disabled = false;
+                    }
+
+                } catch (error) {
+                    clearInterval(statusCheckInterval);
+                    showStatus(`Erreur lors de la vérification du statut: ${error.message}`, 'error');
+                    document.getElementById('downloadBtn').disabled = false;
+                }
+            }, 500);
+        }
+
+        function playVideo(videoData) {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoContainer = document.getElementById('videoContainer');
+            const videoInfo = document.getElementById('videoInfo');
+
+            videoPlayer.src = `/api/stream/${videoData.filename}`;
+            videoContainer.style.display = 'block';
+
+            const duration = formatDuration(videoData.duration);
+            videoInfo.innerHTML = `
+                <h3>${videoData.title}</h3>
+                <p><strong>Durée:</strong> ${duration}</p>
+                <p><strong>Fichier:</strong> ${videoData.filename}</p>
+            `;
+
+            videoPlayer.play();
+            
+            // Scroll vers la vidéo
+            videoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${secs}s`;
+            }
+            return `${minutes}m ${secs}s`;
+        }
+
+        async function loadVideosList() {
+            try {
+                const response = await fetch('/api/videos');
+                const videos = await response.json();
+
+                const listEl = document.getElementById('videosList');
+
+                if (videos.length === 0) {
+                    listEl.innerHTML = '<p style="color: #999;">Aucune vidéo téléchargée pour le moment</p>';
+                    return;
+                }
+
+                listEl.innerHTML = videos.map(video => `
+                    <div class="video-item">
+                        <div class="video-item-info">
+                            <div class="video-item-title">${video.filename}</div>
+                            <div class="video-item-meta">
+                                ${video.sizeFormatted} • ${new Date(video.created).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="video-item-actions">
+                            <button class="play-btn" onclick="playVideoFromList('${video.filename}')">▶️ Lire</button>
+                            <button class="delete-btn" onclick="deleteVideo('${video.filename}')">🗑️ Supprimer</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Erreur lors du chargement de la liste:', error);
+            }
+        }
+
+        async function playVideoFromList(filename) {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoContainer = document.getElementById('videoContainer');
+
+            videoPlayer.src = `/api/stream/${filename}`;
+            videoContainer.style.display = 'block';
+            videoPlayer.play();
+            
+            videoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        async function deleteVideo(filename) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showStatus('Vidéo supprimée avec succès', 'success');
+                    loadVideosList();
+                } else {
+                    const data = await response.json();
+                    showStatus(`Erreur: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Erreur: ${error.message}`, 'error');
+            }
+        }
+
+        // Permet de démarrer le téléchargement avec Enter
+        document.getElementById('youtubeUrl').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startDownload();
+            }
+        });
+
+        // Charge la liste au démarrage
+        loadVideosList();
+    </script>
+</body>
+</html>
