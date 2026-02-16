@@ -1,5 +1,6 @@
 const express = require('express');
 const ytdl = require('@distube/ytdl-core');
+const ytsr = require('ytsr');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -26,6 +27,46 @@ const downloadStatus = new Map();
 // Page d'accueil
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Recherche de vidéos YouTube
+app.get('/api/search', async (req, res) => {
+    const { q } = req.query;
+
+    if (!q || q.trim() === '') {
+        return res.status(400).json({ error: 'Terme de recherche manquant' });
+    }
+
+    try {
+        console.log(`[SEARCH] Recherche: "${q}"`);
+        
+        const searchResults = await ytsr(q, { limit: 12 });
+        
+        // Filtrer pour ne garder que les vidéos
+        const videos = searchResults.items
+            .filter(item => item.type === 'video')
+            .map(video => ({
+                id: video.id,
+                title: video.title,
+                url: video.url,
+                thumbnail: video.thumbnails && video.thumbnails.length > 0 
+                    ? video.thumbnails[0].url 
+                    : video.bestThumbnail?.url || '',
+                duration: video.duration || 'N/A',
+                views: video.views || 0,
+                author: video.author?.name || 'Unknown',
+                uploadedAt: video.uploadedAt || '',
+                description: video.description || ''
+            }))
+            .slice(0, 12); // Limite à 12 résultats
+
+        console.log(`[SEARCH] ${videos.length} résultats trouvés`);
+        res.json({ results: videos });
+
+    } catch (error) {
+        console.error('[SEARCH] Erreur:', error);
+        res.status(500).json({ error: 'Erreur lors de la recherche: ' + error.message });
+    }
 });
 
 // Démarre le téléchargement
